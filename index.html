@@ -1,1 +1,57 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXYL Casino</title>
+    <link rel="icon" type="image/x-icon" href="scr/icon.ico">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
 
+    <div class="casino-container">
+        <header>
+            <img src="scr/icon.ico" alt="Logo" class="logo">
+            <h1>EXYL Casino</h1>
+        </header>
+
+        <div id="login-section" class="card">
+            <p>Logge dich ein, um deine täglichen Credits zu sammeln!</p>
+            <button class="btn-discord" onclick="login()">
+                <img src="https://cdn-icons-png.flaticon.com/512/2111/2111370.png" width="20"> Mit Discord einloggen
+            </button>
+        </div>
+
+        <div id="game-section" class="card" style="display: none;">
+            <div class="user-stats">
+                <p>Spieler: <span id="username" class="highlight">...</span></p>
+                <p>Credits: <span id="balance" class="highlight">0</span> 💰</p>
+            </div>
+
+            <div class="action-box">
+                <button id="claimBtn" class="btn-claim" onclick="claim()">🎁 Tägliche 1.000 Credits</button>
+            </div>
+
+            <hr>
+
+            <div class="slot-machine">
+                <h3>🎰 EXYL SLOTS</h3>
+                <div class="slots-display" id="slots">❓ | ❓ | ❓</div>
+                <p class="cost">Einsatz: 100 Credits</p>
+                <button class="btn-play" onclick="playSlots()">DREHEN</button>
+            </div>
+
+            <hr>
+
+            <div class="payout-box">
+                <h3>💳 Auszahlung</h3>
+                <input type="text" id="wallet" placeholder="Deine Wallet Adresse">
+                <button class="btn-payout" onclick="requestPayout()">Auszahlung anfordern</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
