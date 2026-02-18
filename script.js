@@ -82,3 +82,11 @@ function requestPayout() {
 
 // Startet die Prüfung, ob man bereits eingeloggt ist
 checkUser();
+
+// Dieser "Wächter" merkt sofort, wenn der Login erfolgreich war
+_supabase.auth.onAuthStateChange((event, session) => {
+    console.log("Auth Event:", event);
+    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        checkUser(); 
+    }
+});
