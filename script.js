@@ -3,8 +3,6 @@ const SUPABASE_URL = 'https://twsiwctwvdjqiutewhbb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_z-x_IaqJyuCs7AurQ-Rs4w_YxY7LfKU';
 // ----------------------------------
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 async function login() {
     await supabase.auth.signInWithOAuth({ provider: 'discord' });
 }
