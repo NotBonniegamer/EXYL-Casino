@@ -24,32 +24,42 @@
         </div>
 
         <div id="game-section" class="card" style="display: none;">
-            <div class="user-stats">
-                <p>Spieler: <span id="username" class="highlight">...</span></p>
-                <p>Credits: <span id="balance" class="highlight">0</span> 💰</p>
-            </div>
+    <div class="user-stats">
+        <p>Spieler: <span id="username" class="highlight">...</span> | Credits: <span id="balance" class="highlight">0</span> 💰</p>
+    </div>
 
-            <div class="action-box">
-                <button id="claimBtn" class="btn-claim" onclick="claim()">🎁 Tägliche 1.000 Credits</button>
-            </div>
+    <div class="game-box">
+        <h4>🎰 Slots (100)</h4>
+        <div id="slots-res">❓ | ❓ | ❓</div>
+        <button onclick="playSlots()">Drehen</button>
+    </div>
 
-            <hr>
+    <div class="game-box">
+        <h4>🪙 Coinflip (100)</h4>
+        <button onclick="playCoinflip('Heads')">Heads</button>
+        <button onclick="playCoinflip('Tails')">Tails</button>
+    </div>
 
-            <div class="slot-machine">
-                <h3>🎰 EXYL SLOTS</h3>
-                <div class="slots-display" id="slots">❓ | ❓ | ❓</div>
-                <p class="cost">Einsatz: 100 Credits</p>
-                <button class="btn-play" onclick="playSlots()">DREHEN</button>
-            </div>
+    <div class="game-box">
+        <h4>🚀 Crash (100)</h4>
+        <div id="crash-display" style="font-size: 1.5em;">1.0x</div>
+        <button id="crash-btn" onclick="playCrash()">Starten</button>
+    </div>
 
-            <hr>
+    <div class="game-box">
+        <h4>🎡 Roulette (100)</h4>
+        <button style="background:red" onclick="playRoulette('red')">Rot</button>
+        <button style="background:black; color:white" onclick="playRoulette('black')">Schwarz</button>
+        <button style="background:green" onclick="playRoulette('green')">Green (x14)</button>
+    </div>
 
-            <div class="payout-box">
-                <h3>💳 Auszahlung</h3>
-                <input type="text" id="wallet" placeholder="Deine Wallet Adresse">
-                <button class="btn-payout" onclick="requestPayout()">Auszahlung anfordern</button>
-            </div>
-        </div>
+    <div class="game-box">
+        <h4>🃏 Higher / Lower (100)</h4>
+        <p>Aktuelle Karte: <span id="hilo-card" class="highlight">5</span></p>
+        <button onclick="playHiLo('hi')">Höher</button>
+        <button onclick="playHiLo('lo')">Tiefer</button>
+    </div>
+</div>
     </div>
 
     <script src="script.js"></script>
