@@ -3,125 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EXYL Casino - Pro</title>
+    <title>EXYL Casino | Premium</title>
     <link rel="icon" type="image/x-icon" href="src/icon.ico">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
 
-    <div id="overlay-system" class="overlay-hidden">
-        <div class="overlay-content">
-            <h2 id="overlay-title">Meldung</h2>
-            <p id="overlay-text"></p>
-            <button class="btn-primary" onclick="closeOverlay()">OK</button>
+    <div id="app-loader" class="flex-center">
+        <div class="spinner"></div>
+        <p>EXYL System wird geladen...</p>
+    </div>
+
+    <div id="modal-overlay" class="hidden flex-center">
+        <div class="modal-box">
+            <h2 id="modal-title">Benachrichtigung</h2>
+            <p id="modal-text">Dies ist ein Text.</p>
+            <button class="btn-primary w-full" onclick="closeModal()">Verstanden</button>
         </div>
     </div>
 
-    <div id="loading-overlay" class="loading-overlay">
-        <div class="spinner"></div>
-        <p>Verbindung zum Server...</p>
-    </div>
+    <div id="app-wrapper">
 
-    <div class="casino-wrapper">
-        
-        <div id="login-page" class="page active">
-            <header>
-                <img src="src/icon.ico" alt="EXYL Logo" class="logo">
-                <h1>EXYL Casino</h1>
-            </header>
-            <div class="card fade-in">
-                <p>Bereit für den Jackpot?</p>
-                <button class="btn-discord" onclick="login()">
-                    <img src="https://cdn-icons-png.flaticon.com/512/2111/2111370.png" alt="Discord Logo" width="20"> Mit Discord einloggen
+        <div id="view-login" class="view-section active flex-center">
+            <div class="login-card">
+                <img src="src/icon.ico" alt="EXYL Logo" class="brand-logo pulse-anim">
+                <h1>EXYL CASINO</h1>
+                <p>Das Next-Gen Krypto Casino Erlebnis.</p>
+                <button class="btn-discord w-full" onclick="appLogin()">
+                    <span>🎮</span> Mit Discord verbinden
                 </button>
             </div>
         </div>
 
-        <div id="dashboard-page" class="page">
-            <header class="game-header">
-                <div class="header-left">
-                    <span class="theme-switch" onclick="toggleTheme()">🌓</span>
-                    <img src="src/icon.ico" alt="Logo" class="logo-small">
+        <div id="secure-area" class="hidden">
+            
+            <header class="topbar">
+                <div class="brand">
+                    <button class="icon-btn" onclick="toggleTheme()">🌓</button>
+                    <span class="brand-name">EXYL</span>
                 </div>
-                <div class="user-info">
-                    <span id="username" class="highlight">Gast</span> | <span id="balance" class="highlight">0</span> 💰
+                <div class="user-stats">
+                    <div class="balance-badge">
+                        <span class="balance-amount">0</span> <span class="currency">💰</span>
+                    </div>
+                    <button class="icon-btn logout-btn" onclick="appLogout()">🚪</button>
                 </div>
-                <button class="btn-logout" onclick="logout()">🚪</button>
             </header>
 
-            <nav class="game-navigation">
-                <button class="nav-btn active" data-target="games">Spiele</button>
-                <button class="nav-btn" data-target="profile">Profil</button>
-                <button class="nav-btn" data-target="payout">Auszahlung</button>
+            <main id="view-dashboard" class="view-section">
+                <div class="dashboard-header">
+                    <h2>Willkommen, <span id="display-username" class="highlight">Spieler</span>!</h2>
+                    <p>Wähle dein Spiel und knack den Jackpot.</p>
+                </div>
+
+                <div class="games-grid">
+                    <div class="game-card" onclick="switchView('view-slots')">
+                        <div class="game-icon">🎰</div>
+                        <h3>Slots</h3>
+                        <p>Der Casino Klassiker.</p>
+                    </div>
+                    <div class="game-card" onclick="switchView('view-crash')">
+                        <div class="game-icon">🚀</div>
+                        <h3>Crash</h3>
+                        <p>Timing ist alles.</p>
+                    </div>
+                    <div class="game-card" onclick="switchView('view-coinflip')">
+                        <div class="game-icon">🪙</div>
+                        <h3>Coinflip</h3>
+                        <p>50/50 purer Nervenkitzel.</p>
+                    </div>
+                    <div class="game-card" onclick="switchView('view-roulette')">
+                        <div class="game-icon">🎡</div>
+                        <h3>Roulette</h3>
+                        <p>Setz auf deine Farbe.</p>
+                    </div>
+                    <div class="game-card" onclick="switchView('view-hilo')">
+                        <div class="game-icon">🃏</div>
+                        <h3>Hi-Lo</h3>
+                        <p>Karten lesen und gewinnen.</p>
+                    </div>
+                    <div class="game-card special-card" onclick="switchView('view-daily')">
+                        <div class="game-icon">🎁</div>
+                        <h3>Daily Bonus</h3>
+                        <p>Kostenlose Credits.</p>
+                    </div>
+                </div>
+            </main>
+
+            <main id="view-slots" class="view-section game-view">
+                <div class="game-header">
+                    <button class="btn-back" onclick="switchView('view-dashboard')">Zurück</button>
+                    <h2>🎰 Slots</h2>
+                    <div class="balance-badge"><span class="balance-amount">0</span> 💰</div>
+                </div>
+                <div class="game-content">
+                    <div class="slots-machine" id="slots-machine-display">
+                        <span>❓</span> | <span>❓</span> | <span>❓</span>
+                    </div>
+                    <div class="bet-controls">
+                        <label>Einsatz:</label>
+                        <input type="number" id="bet-slots" value="100" min="10" step="10">
+                    </div>
+                    <button class="btn-play w-full" onclick="playSlots()">DREHEN</button>
+                </div>
+            </main>
+
+            <main id="view-crash" class="view-section game-view">
+                <div class="game-header">
+                    <button class="btn-back" onclick="switchView('view-dashboard')">Zurück</button>
+                    <h2>🚀 Crash</h2>
+                    <div class="balance-badge"><span class="balance-amount">0</span> 💰</div>
+                </div>
+                <div class="game-content">
+                    <div class="crash-graph" id="crash-graph">
+                        <div id="crash-multiplier">1.00x</div>
+                    </div>
+                    <div class="bet-controls">
+                        <label>Einsatz:</label>
+                        <input type="number" id="bet-crash" value="100" min="10">
+                    </div>
+                    <button class="btn-play w-full" id="btn-start-crash" onclick="startCrash()">STARTEN</button>
+                    <button class="btn-cashout w-full hidden" id="btn-cashout-crash" onclick="cashoutCrash()">CASH OUT</button>
+                </div>
+            </main>
+
+            <main id="view-coinflip" class="view-section game-view">
+                <div class="game-header">
+                    <button class="btn-back" onclick="switchView('view-dashboard')">Zurück</button>
+                    <h2>🪙 Coinflip</h2>
+                    <div class="balance-badge"><span class="balance-amount">0</span> 💰</div>
+                </div>
+                <div class="game-content">
+                    <div class="coin" id="coin-visual"><span>EXYL</span></div>
+                    <div class="bet-controls">
+                        <label>Einsatz:</label>
+                        <input type="number" id="bet-coinflip" value="100" min="10">
+                    </div>
+                    <div class="flex-row">
+                        <button class="btn-play w-half" onclick="playCoinflip('Kopf')">KOPF</button>
+                        <button class="btn-play w-half" onclick="playCoinflip('Zahl')">ZAHL</button>
+                    </div>
+                </div>
+            </main>
+
+            <main id="view-roulette" class="view-section game-view">
+                <div class="game-header">
+                    <button class="btn-back" onclick="switchView('view-dashboard')">Zurück</button>
+                    <h2>🎡 Roulette</h2>
+                    <div class="balance-badge"><span class="balance-amount">0</span> 💰</div>
+                </div>
+                <div class="game-content">
+                    <div class="roulette-wheel" id="roulette-visual"></div>
+                    <div class="bet-controls">
+                        <label>Einsatz:</label>
+                        <input type="number" id="bet-roulette" value="100" min="10">
+                    </div>
+                    <div class="roulette-buttons">
+                        <button class="btn-red" onclick="playRoulette('red')">ROT (2x)</button>
+                        <button class="btn-black" onclick="playRoulette('black')">SCHWARZ (2x)</button>
+                        <button class="btn-green" onclick="playRoulette('green')">GRÜN (14x)</button>
+                    </div>
+                </div>
+            </main>
+
+            <main id="view-hilo" class="view-section game-view">
+                <div class="game-header">
+                    <button class="btn-back" onclick="switchView('view-dashboard')">Zurück</button>
+                    <h2>🃏 Hi-Lo</h2>
+                    <div class="balance-badge"><span class="balance-amount">0</span> 💰</div>
+                </div>
+                <div class="game-content">
+                    <p>Aktuelle Karte:</p>
+                    <div class="playing-card" id="hilo-card-visual">5</div>
+                    <div class="bet-controls">
+                        <label>Einsatz:</label>
+                        <input type="number" id="bet-hilo" value="100" min="10">
+                    </div>
+                    <div class="flex-row">
+                        <button class="btn-play w-half" onclick="playHiLo('hi')">HÖHER ⬆️</button>
+                        <button class="btn-play w-half" onclick="playHiLo('lo')">TIEFER ⬇️</button>
+                    </div>
+                </div>
+            </main>
+
+            <main id="view-daily" class="view-section game-view">
+                <div class="game-header">
+                    <button class="btn-back" onclick="switchView('view-dashboard')">Zurück</button>
+                    <h2>🎁 Belohnungen</h2>
+                </div>
+                <div class="game-content">
+                    <div class="info-box">
+                        <h3>Daily Bonus</h3>
+                        <p>Sammle alle 24 Stunden 1.000 Credits ein.</p>
+                        <button class="btn-primary w-full" onclick="claimDaily()">Abholen</button>
+                    </div>
+                </div>
+            </main>
+
+            <main id="view-payout" class="view-section game-view">
+                <div class="game-header">
+                    <h2>💳 Payout</h2>
+                </div>
+                <div class="game-content">
+                    <div class="info-box border-accent">
+                        <h3>STATUS: COMING SOON</h3>
+                        <p>Die Auszahlungen für das Mainnet werden derzeit integriert.</p>
+                        <input type="text" placeholder="Wallet Adresse" disabled>
+                        <button class="btn-secondary w-full" disabled>Auszahlung anfordern</button>
+                    </div>
+                </div>
+            </main>
+
+            <nav class="bottom-nav">
+                <button class="nav-item" onclick="switchView('view-dashboard')">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Home</span>
+                </button>
+                <button class="nav-item" onclick="switchView('view-payout')">
+                    <span class="nav-icon">💳</span>
+                    <span class="nav-text">Wallet</span>
+                </button>
             </nav>
 
-            <div id="games-section" class="content-section active">
-                <div class="game-grid">
-                    <div class="game-card bounce-in" onclick="showGamePage('slots-page')">
-                        <h3>🎰 Slots</h3>
-                        <p>Knack den Jackpot!</p>
-                    </div>
-                    <div class="game-card bounce-in" onclick="showGamePage('crash-page')">
-                        <h3>🚀 Crash</h3>
-                        <p>Multiplikator-Action!</p>
-                    </div>
-                    <div class="game-card bounce-in" onclick="showGamePage('coinflip-page')">
-                        <h3>🪙 Coinflip</h3>
-                        <p>50/50 Chance.</p>
-                    </div>
-                    <div class="game-card bounce-in" onclick="showGamePage('roulette-page')">
-                        <h3>🎡 Roulette</h3>
-                        <p>Wähle deine Farbe.</p>
-                    </div>
-                    <div class="game-card bounce-in" onclick="showGamePage('hilo-page')">
-                        <h3>🃏 Hi-Lo</h3>
-                        <p>Höher oder Tiefer?</p>
-                    </div>
-                    <div class="game-card bounce-in" onclick="showGamePage('daily-page')">
-                        <h3>🎁 Daily</h3>
-                        <p>+1.000 Credits</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="profile-section" class="content-section">
-                <div class="card">
-                    <h3>Dein Status</h3>
-                    <p>User: <span id="profile-user" class="highlight">...</span></p>
-                    <p>Balance: <span id="profile-balance" class="highlight">0</span> 💰</p>
-                    <hr>
-                    <button class="btn-back" style="width:100%" onclick="logout()">Ausloggen</button>
-                </div>
-            </div>
-
-            <div id="payout-section" class="content-section">
-                <div class="card">
-                    <h3>💳 Auszahlung</h3>
-                    <div class="badge-soon">COMING SOON</div>
-                    <p>Das Payout-System wird derzeit für das Mainnet vorbereitet.</p>
-                    <input type="text" id="wallet" placeholder="Wallet Adresse" disabled>
-                </div>
-            </div>
-        </div>
-
-        <div id="crash-page" class="page game-page">
-            <header class="game-sub-header">
-                <button class="btn-back" onclick="showGamePage('dashboard-page', 'games')">←</button>
-                <h3>🚀 CRASH</h3>
-                <div class="user-info-small"><span id="crash-balance">0</span> 💰</div>
-            </header>
-            <div class="card game-card-content">
-                <div class="crash-ui">
-                    <div id="crash-multiplier">1.00x</div>
-                </div>
-                <button id="crash-start-btn" class="btn-play-game" onclick="startCrash()">START (100)</button>
-                <button id="crash-cashout-btn" class="btn-cashout" style="display:none" onclick="cashOutCrash()">CASH OUT!</button>
-            </div>
-        </div>
-
-        </div>
-
-    <script src="script.js"></script>
+        </div> </div> <script src="script.js"></script>
 </body>
 </html>
