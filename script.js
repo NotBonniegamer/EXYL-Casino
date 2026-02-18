@@ -1,225 +1,319 @@
-// --- INITIALISIERUNG ---
+// ==========================================
+// 1. SUPABASE KONFIGURATION
+// ==========================================
 const SUPABASE_URL = 'https://twsiwctwvdjqiutewhbb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_z-x_IaqJyuCs7AurQ-Rs4w_YxY7LfKU';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- NAVIGATION & UI LOGIK ---
-function showGamePage(pageId, sectionId = null) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const targetPage = document.getElementById(pageId);
-    if (targetPage) targetPage.classList.add('active');
+let currentUser = null;
 
-    if (sectionId) {
-        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-        const sect = document.getElementById(sectionId + '-section');
-        if (sect) sect.classList.add('active');
-        
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        const btn = document.querySelector(`[data-target="${sectionId}"]`);
-        if (btn) btn.classList.add('active');
-    }
-    updateBalance();
+// ==========================================
+// 2. UI & SYSTEM CONTROLLER
+// ==========================================
+
+// Custom Modal (Ersatz für alert)
+function showModal(title, text) {
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-text').innerText = text;
+    const modal = document.getElementById('modal-overlay');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex-center');
 }
 
-// Event Listener für Dashboard Tabs
-document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const target = btn.getAttribute('data-target');
-        showGamePage('dashboard-page', target);
+window.closeModal = function() {
+    const modal = document.getElementById('modal-overlay');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex-center');
+}
+
+// Navigation zwischen den Views
+window.switchView = function(viewId) {
+    document.querySelectorAll('.view-section').forEach(view => {
+        view.classList.remove('active');
     });
-});
-
-// --- CUSTOM OVERLAY (Ersatz für Alerts) ---
-function showMsg(title, message) {
-    const overlay = document.getElementById('overlay-system') || document.getElementById('custom-alert');
-    const titleEl = document.getElementById('overlay-title') || document.getElementById('alert-title');
-    const msgEl = document.getElementById('overlay-text') || document.getElementById('alert-msg');
-    
-    if (titleEl) titleEl.innerText = title;
-    if (msgEl) msgEl.innerText = message;
-    
-    overlay.style.display = 'flex'; 
-    overlay.classList.remove('overlay-hidden');
-    overlay.classList.add('overlay-visible');
+    document.getElementById(viewId).classList.add('active');
+    syncBalancesToUI(); // Balance beim Tab-Wechsel updaten
 }
 
-function closeOverlay() {
-    const overlay = document.getElementById('overlay-system') || document.getElementById('custom-alert');
-    overlay.classList.add('overlay-hidden');
-    overlay.classList.remove('overlay-visible');
-    overlay.style.display = 'none';
-}
-// Alias für Abwärtskompatibilität
-window.showAlert = showMsg;
-window.closeAlert = closeOverlay;
-
-// --- THEME SWITCH ---
-function toggleTheme() {
+// Theme Switcher
+window.toggleTheme = function() {
     const root = document.documentElement;
-    const currentTheme = root.getAttribute('data-theme') || 'dark';
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    root.setAttribute('data-theme', newTheme);
-    localStorage.setItem('casino-theme', newTheme);
+    const theme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('exyl-theme', theme);
 }
 
-// --- CORE AUTH ---
-window.login = async function() {
+// ==========================================
+// 3. AUTH & DATENBANK
+// ==========================================
+
+window.appLogin = async function() {
     const { error } = await _supabase.auth.signInWithOAuth({ 
         provider: 'discord',
         options: { redirectTo: window.location.origin + window.location.pathname }
     });
-    if(error) showMsg("Error", error.message);
-};
+    if(error) showModal("Login Fehler", error.message);
+}
 
-window.logout = async function() {
+window.appLogout = async function() {
     await _supabase.auth.signOut();
     location.reload();
-};
+}
 
-async function updateBalance() {
+// Überprüft, ob der User existiert und aktualisiert die UI
+async function initSession() {
     const { data: { user } } = await _supabase.auth.getUser();
-    if (!user) return;
+    const loader = document.getElementById('app-loader');
 
-    let { data, error } = await _supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+    if (user) {
+        currentUser = user;
+        document.getElementById('view-login').classList.remove('active');
+        document.getElementById('secure-area').classList.remove('hidden');
+        document.getElementById('display-username').innerText = user.user_metadata.full_name || 'Spieler';
+        
+        await syncBalancesToUI();
+        switchView('view-dashboard');
+    }
 
-    if (!data && !error) {
+    if(loader) loader.classList.add('hidden'); // Loader ausschalten
+}
+
+// Holt Guthaben aus Supabase und erstellt Profil falls nötig
+async function syncBalancesToUI() {
+    if (!currentUser) return;
+
+    let { data, error } = await _supabase.from('profiles').select('credits').eq('id', currentUser.id).maybeSingle();
+
+    if (!data) {
         const { data: newData } = await _supabase.from('profiles')
-            .insert([{ id: user.id, username: user.user_metadata.full_name, credits: 1000 }])
+            .insert([{ id: currentUser.id, username: currentUser.user_metadata.full_name, credits: 1000 }])
             .select().single();
         data = newData;
     }
 
     if (data) {
-        const balElements = ['balance', 'slots-balance', 'coinflip-balance', 'crash-balance', 'roulette-balance', 'hilo-balance', 'daily-balance', 'profile-balance'];
-        balElements.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.innerText = data.credits;
+        document.querySelectorAll('.balance-amount').forEach(el => {
+            el.innerText = data.credits;
         });
-        if(document.getElementById('username')) document.getElementById('username').innerText = data.username;
-        if(document.getElementById('profile-user')) document.getElementById('profile-user').innerText = data.username;
     }
 }
 
-async function changeCredits(amount) {
-    const { data: { user } } = await _supabase.auth.getUser();
-    if (!user) return;
-    const current = parseInt(document.getElementById('balance').innerText);
-    const { error } = await _supabase.from('profiles').update({ credits: current + amount }).eq('id', user.id);
-    if (!error) await updateBalance();
+// Zentrale Funktion zum Geld abziehen/hinzufügen
+async function modifyBalance(amount) {
+    if (!currentUser) return false;
+    
+    // Aktuelles Guthaben von der UI lesen
+    const currentBal = parseInt(document.querySelector('.balance-amount').innerText);
+    const newBal = currentBal + amount;
+
+    if (newBal < 0) return false; // Sicherheitsscheck
+
+    const { error } = await _supabase.from('profiles').update({ credits: newBal }).eq('id', currentUser.id);
+    if (!error) {
+        await syncBalancesToUI();
+        return true;
+    }
+    return false;
 }
 
-// --- SPIEL-LOGIKEN (MIT OVERLAYS) ---
+// Hilfsfunktion: Überprüft ob genug Einsatz da ist
+function getBetAmount(inputId) {
+    const bet = parseInt(document.getElementById(inputId).value);
+    const currentBal = parseInt(document.querySelector('.balance-amount').innerText);
+    if (isNaN(bet) || bet <= 0) {
+        showModal("Fehler", "Ungültiger Einsatz!");
+        return -1;
+    }
+    if (bet > currentBal) {
+        showModal("Zu wenig Credits", "Dein Guthaben reicht dafür nicht aus.");
+        return -1;
+    }
+    return bet;
+}
 
-// 1. SLOTS
-async function playSlots() {
-    const bal = parseInt(document.getElementById('balance').innerText);
-    if (bal < 100) return showMsg("Ouch!", "Zu wenig Credits!");
+// ==========================================
+// 4. SPIELE LOGIK
+// ==========================================
 
-    const symbols = ['🍒', '🍋', '🔔', '💎', '7️⃣'];
-    document.getElementById('slots-display').innerText = "🔄 | 🔄 | 🔄";
-    
+// --- SLOTS ---
+window.playSlots = async function() {
+    const bet = getBetAmount('bet-slots');
+    if (bet === -1) return;
+
+    const display = document.getElementById('slots-machine-display');
+    display.innerHTML = "<span>🌀</span> | <span>🌀</span> | <span>🌀</span>";
+
     setTimeout(async () => {
-        const s1 = symbols[Math.floor(Math.random() * symbols.length)];
-        const s2 = symbols[Math.floor(Math.random() * symbols.length)];
-        const s3 = symbols[Math.floor(Math.random() * symbols.length)];
-        document.getElementById('slots-display').innerText = `${s1} | ${s2} | ${s3}`;
+        const symbols = ['🍒', '💎', '7️⃣', '🍋'];
+        const r = [
+            symbols[Math.floor(Math.random() * 4)],
+            symbols[Math.floor(Math.random() * 4)],
+            symbols[Math.floor(Math.random() * 4)]
+        ];
+        
+        display.innerHTML = `<span>${r[0]}</span> | <span>${r[1]}</span> | <span>${r[2]}</span>`;
 
-        if (s1 === s2 && s2 === s3) {
-            showMsg("JACKPOT!", "Drei gleiche! +1000 Credits gewonnen!");
-            await changeCredits(1000);
+        if (r[0] === r[1] && r[1] === r[2]) {
+            const win = bet * 10;
+            await modifyBalance(win);
+            showModal("JACKPOT!", `Drei gleiche! Du gewinnst ${win} Credits!`);
         } else {
-            await changeCredits(-100);
+            await modifyBalance(-bet);
+        }
+    }, 800);
+}
+
+// --- COINFLIP ---
+window.playCoinflip = async function(choice) {
+    const bet = getBetAmount('bet-coinflip');
+    if (bet === -1) return;
+
+    const coin = document.getElementById('coin-visual');
+    coin.innerHTML = "<span>🔄</span>";
+    coin.style.animation = "spin 0.5s linear infinite";
+
+    setTimeout(async () => {
+        coin.style.animation = "none";
+        const result = Math.random() < 0.5 ? 'Kopf' : 'Zahl';
+        coin.innerHTML = `<span>${result === 'Kopf' ? 'KOPF' : 'ZAHL'}</span>`;
+
+        if (choice === result) {
+            await modifyBalance(bet);
+            showModal("Gewonnen!", `Die Münze zeigt ${result}. Du gewinnst ${bet} Credits.`);
+        } else {
+            await modifyBalance(-bet);
+            showModal("Verloren!", `Die Münze zeigt ${result}. Du verlierst ${bet} Credits.`);
         }
     }, 1000);
 }
 
-// 2. CRASH
-let crashInterval;
-let currentMultiplier = 1.0;
-let isRacing = false;
+// --- CRASH ---
+let crashRunning = false;
+let crashMult = 1.0;
+let crashTimer;
+let currentCrashBet = 0;
 
-async function startCrash() {
-    if (isRacing) return;
-    const bal = parseInt(document.getElementById('balance').innerText);
-    if (bal < 100) return showMsg("Fehler", "Mindesteinsatz 100 Credits!");
+window.startCrash = async function() {
+    if (crashRunning) return;
+    currentCrashBet = getBetAmount('bet-crash');
+    if (currentCrashBet === -1) return;
 
-    isRacing = true;
-    currentMultiplier = 1.0;
-    const crashPoint = (Math.random() * 5 + 1.1).toFixed(2);
-    
-    document.getElementById('crash-start-btn').style.display = 'none';
-    document.getElementById('crash-cashout-btn').style.display = 'inline-block';
-    
-    crashInterval = setInterval(async () => {
-        currentMultiplier = (parseFloat(currentMultiplier) + 0.05).toFixed(2);
-        document.getElementById('crash-multiplier').innerText = currentMultiplier + "x";
+    crashRunning = true;
+    crashMult = 1.0;
+    document.getElementById('btn-start-crash').classList.add('hidden');
+    document.getElementById('btn-cashout-crash').classList.remove('hidden');
+    document.getElementById('crash-graph').style.borderColor = 'var(--accent)';
 
-        if (currentMultiplier >= crashPoint) {
-            clearInterval(crashInterval);
-            showMsg("CRASHED!", `Der Multiplikator ist bei ${currentMultiplier}x gecrasht! -100 Credits.`);
-            await changeCredits(-100);
-            resetCrash();
+    const crashPoint = (Math.random() * 4 + 1.1).toFixed(2);
+
+    crashTimer = setInterval(async () => {
+        crashMult = (parseFloat(crashMult) + 0.05).toFixed(2);
+        document.getElementById('crash-multiplier').innerText = crashMult + "x";
+
+        if (crashMult >= crashPoint) {
+            clearInterval(crashTimer);
+            document.getElementById('crash-graph').style.borderColor = 'red';
+            showModal("BOOM!", `Gecrasht bei ${crashMult}x. Einsatz verloren.`);
+            await modifyBalance(-currentCrashBet);
+            resetCrashUI();
         }
-    }, 100);
+    }, 150);
 }
 
-async function cashOutCrash() {
-    if (!isRacing) return;
-    clearInterval(crashInterval);
-    const win = Math.floor(100 * currentMultiplier) - 100;
-    showMsg("Sieg!", `Du bist bei ${currentMultiplier}x ausgestiegen und hast ${win} Credits gewonnen!`);
-    await changeCredits(win);
-    resetCrash();
+window.cashoutCrash = async function() {
+    if (!crashRunning) return;
+    clearInterval(crashTimer);
+    
+    const win = Math.floor(currentCrashBet * crashMult) - currentCrashBet;
+    showModal("Erfolgreich!", `Ausgestiegen bei ${crashMult}x. Gewinn: ${win} Credits.`);
+    await modifyBalance(win);
+    resetCrashUI();
 }
 
-function resetCrash() {
-    isRacing = false;
-    document.getElementById('crash-start-btn').style.display = 'inline-block';
-    document.getElementById('crash-cashout-btn').style.display = 'none';
+function resetCrashUI() {
+    crashRunning = false;
+    document.getElementById('btn-start-crash').classList.remove('hidden');
+    document.getElementById('btn-cashout-crash').classList.add('hidden');
 }
 
-// 3. DAILY BONUS
-async function claimDailyBonus() {
-    const { data: { user } } = await _supabase.auth.getUser();
-    const { data } = await _supabase.from('profiles').select('last_claim').eq('id', user.id).single();
+// --- ROULETTE ---
+window.playRoulette = async function(color) {
+    const bet = getBetAmount('bet-roulette');
+    if (bet === -1) return;
+
+    const wheel = document.getElementById('roulette-visual');
+    wheel.style.transform = `rotate(${Math.floor(Math.random() * 360) + 1080}deg)`;
+
+    setTimeout(async () => {
+        const num = Math.floor(Math.random() * 37);
+        const resColor = num === 0 ? 'green' : (num % 2 === 0 ? 'red' : 'black');
+
+        if (color === resColor) {
+            const win = color === 'green' ? bet * 14 : bet;
+            await modifyBalance(win);
+            showModal("Gewonnen!", `Die Kugel landete auf ${resColor} (${num}). +${win} Credits.`);
+        } else {
+            await modifyBalance(-bet);
+            showModal("Verloren!", `Die Kugel landete auf ${resColor} (${num}).`);
+        }
+    }, 2000);
+}
+
+// --- HI-LO ---
+let hiloCard = 5;
+window.playHiLo = async function(guess) {
+    const bet = getBetAmount('bet-hilo');
+    if (bet === -1) return;
+
+    const nextCard = Math.floor(Math.random() * 10) + 1;
+    document.getElementById('hilo-card-visual').innerText = nextCard;
+
+    const isHigher = nextCard > hiloCard;
+    const isLower = nextCard < hiloCard;
+    const tie = nextCard === hiloCard;
+
+    if (tie || (guess === 'hi' && isHigher) || (guess === 'lo' && isLower)) {
+        await modifyBalance(bet);
+        showModal("Richtig!", `Die nächste Karte war ${nextCard}. Du gewinnst ${bet} Credits.`);
+    } else {
+        await modifyBalance(-bet);
+        showModal("Falsch!", `Die nächste Karte war ${nextCard}. Du verlierst.`);
+    }
+    hiloCard = nextCard;
+}
+
+// --- DAILY BONUS ---
+window.claimDaily = async function() {
+    if (!currentUser) return;
+    const { data } = await _supabase.from('profiles').select('last_claim').eq('id', currentUser.id).single();
     
     const now = new Date();
     const lastClaim = data.last_claim ? new Date(data.last_claim) : new Date(0);
-    const diff = now - lastClaim;
+    const diffHours = (now - lastClaim) / (1000 * 60 * 60);
 
-    if (diff > 24 * 60 * 60 * 1000) {
-        await _supabase.from('profiles').update({ last_claim: now.toISOString() }).eq('id', user.id);
-        await changeCredits(1000);
-        showMsg("Bonus", "1.000 Credits wurden deinem Konto gutgeschrieben!");
+    if (diffHours >= 24) {
+        await _supabase.from('profiles').update({ last_claim: now.toISOString() }).eq('id', currentUser.id);
+        await modifyBalance(1000);
+        showModal("Daily Bonus", "1.000 Credits wurden gutgeschrieben!");
     } else {
-        const remaining = new Date(24 * 60 * 60 * 1000 - diff);
-        showMsg("Geduld!", `Du kannst deinen nächsten Bonus in ${remaining.getUTCHours()}h ${remaining.getUTCMinutes()}m abholen.`);
+        const left = Math.ceil(24 - diffHours);
+        showModal("Geduld", `Du kannst deinen nächsten Bonus in ca. ${left} Stunden abholen.`);
     }
 }
 
-// --- INITIALISIERUNG BEIM LADEN ---
-(async () => {
-    // Theme laden
-    const savedTheme = localStorage.getItem('casino-theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+// ==========================================
+// 5. STARTUP LOGIK
+// ==========================================
 
-    // Login Check
-    const { data: { user } } = await _supabase.auth.getUser();
-    if (user) {
-        showGamePage('dashboard-page', 'games');
-        updateBalance();
-    }
-    
-    // Loader verstecken
-    setTimeout(() => {
-        if(document.getElementById('loading-overlay')) 
-            document.getElementById('loading-overlay').classList.add('hidden');
-    }, 1000);
-})();
+// Lade Theme aus Speicher
+if(localStorage.getItem('exyl-theme')) {
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('exyl-theme'));
+}
 
+// Supabase Listener
 _supabase.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_IN') {
-        showGamePage('dashboard-page', 'games');
-        updateBalance();
-    }
+    if (event === 'SIGNED_IN') initSession();
 });
+
+// Init App
+initSession();
