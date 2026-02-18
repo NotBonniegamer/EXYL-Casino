@@ -1,29 +1,37 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EXYL Casino - Dein ultimatives Gaming-Erlebnis</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EXYL Casino - Pro</title>
     <link rel="icon" type="image/x-icon" href="src/icon.ico">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
 
-    <div class="casino-wrapper">
-
-        <div id="loading-overlay" class="loading-overlay">
-            <div class="spinner"></div>
-            <p>Lade Casino...</p>
+    <div id="overlay-system" class="overlay-hidden">
+        <div class="overlay-content">
+            <h2 id="overlay-title">Meldung</h2>
+            <p id="overlay-text"></p>
+            <button class="btn-primary" onclick="closeOverlay()">OK</button>
         </div>
+    </div>
 
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Verbindung zum Server...</p>
+    </div>
+
+    <div class="casino-wrapper">
+        
         <div id="login-page" class="page active">
             <header>
                 <img src="src/icon.ico" alt="EXYL Logo" class="logo">
-                <h1>Willkommen im EXYL Casino</h1>
+                <h1>EXYL Casino</h1>
             </header>
             <div class="card fade-in">
-                <p>Logge dich ein, um deine täglichen Credits zu sammeln und loszulegen!</p>
+                <p>Bereit für den Jackpot?</p>
                 <button class="btn-discord" onclick="login()">
                     <img src="https://cdn-icons-png.flaticon.com/512/2111/2111370.png" alt="Discord Logo" width="20"> Mit Discord einloggen
                 </button>
@@ -32,12 +40,14 @@
 
         <div id="dashboard-page" class="page">
             <header class="game-header">
-                <img src="src/icon.ico" alt="EXYL Logo" class="logo-small">
-                <h2>EXYL Dashboard</h2>
+                <div class="header-left">
+                    <span class="theme-switch" onclick="toggleTheme()">🌓</span>
+                    <img src="src/icon.ico" alt="Logo" class="logo-small">
+                </div>
                 <div class="user-info">
                     <span id="username" class="highlight">Gast</span> | <span id="balance" class="highlight">0</span> 💰
                 </div>
-                <button class="btn-logout" onclick="logout()">Logout</button>
+                <button class="btn-logout" onclick="logout()">🚪</button>
             </header>
 
             <nav class="game-navigation">
@@ -50,156 +60,67 @@
                 <div class="game-grid">
                     <div class="game-card bounce-in" onclick="showGamePage('slots-page')">
                         <h3>🎰 Slots</h3>
-                        <p>Drehe die Walzen und knack den Jackpot!</p>
-                    </div>
-                    <div class="game-card bounce-in" onclick="showGamePage('coinflip-page')">
-                        <h3>🪙 Coinflip</h3>
-                        <p>Kopf oder Zahl? 50/50 Chance!</p>
+                        <p>Knack den Jackpot!</p>
                     </div>
                     <div class="game-card bounce-in" onclick="showGamePage('crash-page')">
                         <h3>🚀 Crash</h3>
-                        <p>Steige aus, bevor es crasht!</p>
+                        <p>Multiplikator-Action!</p>
+                    </div>
+                    <div class="game-card bounce-in" onclick="showGamePage('coinflip-page')">
+                        <h3>🪙 Coinflip</h3>
+                        <p>50/50 Chance.</p>
                     </div>
                     <div class="game-card bounce-in" onclick="showGamePage('roulette-page')">
                         <h3>🎡 Roulette</h3>
-                        <p>Setze auf deine Glücksfarbe!</p>
+                        <p>Wähle deine Farbe.</p>
                     </div>
                     <div class="game-card bounce-in" onclick="showGamePage('hilo-page')">
-                        <h3>🃏 Higher / Lower</h3>
-                        <p>Rate die nächste Karte!</p>
+                        <h3>🃏 Hi-Lo</h3>
+                        <p>Höher oder Tiefer?</p>
                     </div>
-                    <div class="game-card bounce-in" onclick="showGamePage('daily-bonus-page')">
-                        <h3>🎁 Tägliche Credits</h3>
-                        <p>Sammle deine täglichen 1000 Credits!</p>
+                    <div class="game-card bounce-in" onclick="showGamePage('daily-page')">
+                        <h3>🎁 Daily</h3>
+                        <p>+1.000 Credits</p>
                     </div>
                 </div>
             </div>
 
             <div id="profile-section" class="content-section">
-                <div class="card fade-in">
-                    <h3>Dein Profil</h3>
-                    <p>Willkommen, <span id="profile-username" class="highlight">...</span>!</p>
-                    <p>Aktuelle Credits: <span id="profile-balance" class="highlight">0</span> 💰</p>
-                    <p>Registriert seit: <span id="profile-joined">...</span></p>
+                <div class="card">
+                    <h3>Dein Status</h3>
+                    <p>User: <span id="profile-user" class="highlight">...</span></p>
+                    <p>Balance: <span id="profile-balance" class="highlight">0</span> 💰</p>
+                    <hr>
+                    <button class="btn-back" style="width:100%" onclick="logout()">Ausloggen</button>
                 </div>
             </div>
 
             <div id="payout-section" class="content-section">
-                <div class="card fade-in">
-                    <h3>Auszahlung anfordern</h3>
-                    <p>Fordere deine EXYL-Coins an deine Wallet-Adresse an.</p>
-                    <input type="text" id="wallet-address" placeholder="Deine Wallet Adresse (z.B. Ethereum, Solana)">
-                    <button class="btn-primary" onclick="requestPayout()">Auszahlung beantragen</button>
-                    <p class="small-text">Mindestauszahlung: 10.000 Credits. Bearbeitung kann bis zu 24 Stunden dauern.</p>
-                </div>
-            </div>
-        </div>
-
-        <div id="slots-page" class="page game-page">
-            <header class="game-sub-header">
-                <button class="btn-back" onclick="showGamePage('dashboard-page', 'games')">← Zurück</button>
-                <h3>🎰 EXYL SLOTS</h3>
-                <div class="user-info-small"><span id="slots-balance" class="highlight">0</span> 💰</div>
-            </header>
-            <div class="card game-card-content fade-in">
-                <div class="slots-machine">
-                    <div class="slots-display" id="slots-display">❓ | ❓ | ❓</div>
-                    <p class="bet-info">Einsatz: 100 Credits</p>
-                    <button class="btn-play-game" onclick="playSlots()">Drehen</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="coinflip-page" class="page game-page">
-            <header class="game-sub-header">
-                <button class="btn-back" onclick="showGamePage('dashboard-page', 'games')">← Zurück</button>
-                <h3>🪙 Coinflip</h3>
-                <div class="user-info-small"><span id="coinflip-balance" class="highlight">0</span> 💰</div>
-            </header>
-            <div class="card game-card-content fade-in">
-                <div class="coinflip-game">
-                    <div id="coin-display" class="coin"><span>❓</span></div>
-                    <p class="bet-info">Einsatz: 100 Credits</p>
-                    <div class="coinflip-btns">
-                        <button class="btn-play-game" onclick="playCoinflip('Kopf')">Kopf</button>
-                        <button class="btn-play-game" onclick="playCoinflip('Zahl')">Zahl</button>
-                    </div>
+                <div class="card">
+                    <h3>💳 Auszahlung</h3>
+                    <div class="badge-soon">COMING SOON</div>
+                    <p>Das Payout-System wird derzeit für das Mainnet vorbereitet.</p>
+                    <input type="text" id="wallet" placeholder="Wallet Adresse" disabled>
                 </div>
             </div>
         </div>
 
         <div id="crash-page" class="page game-page">
             <header class="game-sub-header">
-                <button class="btn-back" onclick="showGamePage('dashboard-page', 'games')">← Zurück</button>
-                <h3>🚀 Crash</h3>
-                <div class="user-info-small"><span id="crash-balance" class="highlight">0</span> 💰</div>
+                <button class="btn-back" onclick="showGamePage('dashboard-page', 'games')">←</button>
+                <h3>🚀 CRASH</h3>
+                <div class="user-info-small"><span id="crash-balance">0</span> 💰</div>
             </header>
-            <div class="card game-card-content fade-in">
-                <div class="crash-game">
-                    <div id="crash-graph">
-                        <span id="crash-multiplier">1.00x</span>
-                    </div>
-                    <p class="bet-info">Einsatz: 100 Credits</p>
-                    <button class="btn-play-game" id="crash-start-btn" onclick="startCrash()">Starten</button>
-                    <button class="btn-cashout" id="crash-cashout-btn" onclick="cashOutCrash()" style="display: none;">Cash Out!</button>
+            <div class="card game-card-content">
+                <div class="crash-ui">
+                    <div id="crash-multiplier">1.00x</div>
                 </div>
+                <button id="crash-start-btn" class="btn-play-game" onclick="startCrash()">START (100)</button>
+                <button id="crash-cashout-btn" class="btn-cashout" style="display:none" onclick="cashOutCrash()">CASH OUT!</button>
             </div>
         </div>
 
-        <div id="roulette-page" class="page game-page">
-            <header class="game-sub-header">
-                <button class="btn-back" onclick="showGamePage('dashboard-page', 'games')">← Zurück</button>
-                <h3>🎡 Roulette</h3>
-                <div class="user-info-small"><span id="roulette-balance" class="highlight">0</span> 💰</div>
-            </header>
-            <div class="card game-card-content fade-in">
-                <div class="roulette-game">
-                    <div id="roulette-wheel" class="wheel"></div>
-                    <p class="bet-info">Einsatz: 100 Credits</p>
-                    <div class="roulette-bets">
-                        <button class="btn-roulette red" onclick="spinRoulette('red')">Rot (x2)</button>
-                        <button class="btn-roulette black" onclick="spinRoulette('black')">Schwarz (x2)</button>
-                        <button class="btn-roulette green" onclick="spinRoulette('green')">Grün (x14)</button>
-                    </div>
-                </div>
-            </div>
         </div>
-
-        <div id="hilo-page" class="page game-page">
-            <header class="game-sub-header">
-                <button class="btn-back" onclick="showGamePage('dashboard-page', 'games')">← Zurück</button>
-                <h3>🃏 Higher / Lower</h3>
-                <div class="user-info-small"><span id="hilo-balance" class="highlight">0</span> 💰</div>
-            </header>
-            <div class="card game-card-content fade-in">
-                <div class="hilo-game">
-                    <p>Aktuelle Karte:</p>
-                    <div id="hilo-card-display" class="hilo-card"><span>5</span></div>
-                    <p class="bet-info">Einsatz: 100 Credits</p>
-                    <div class="hilo-btns">
-                        <button class="btn-play-game" onclick="playHiLo('higher')">Höher</button>
-                        <button class="btn-play-game" onclick="playHiLo('lower')">Tiefer</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="daily-bonus-page" class="page game-page">
-            <header class="game-sub-header">
-                <button class="btn-back" onclick="showGamePage('dashboard-page', 'games')">← Zurück</button>
-                <h3>🎁 Tägliche Credits</h3>
-                <div class="user-info-small"><span id="daily-balance" class="highlight">0</span> 💰</div>
-            </header>
-            <div class="card game-card-content fade-in">
-                <div class="daily-claim-section">
-                    <p>Sammle deine kostenlosen Credits alle 24 Stunden!</p>
-                    <button class="btn-primary" id="claim-btn" onclick="claimDailyBonus()">Credits abholen!</button>
-                    <p id="countdown-timer" class="small-text"></p>
-                </div>
-            </div>
-        </div>
-
-    </div>
 
     <script src="script.js"></script>
 </body>
